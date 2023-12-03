@@ -1,5 +1,3 @@
-require "pry-byebug"
-
 class Board
 	attr_reader :board
 
@@ -28,6 +26,7 @@ class Game
 	end
 
 	def start_game
+		@board.display_board
 		until	game_over? do
 			play_round
 		end
@@ -36,10 +35,22 @@ class Game
 
 	def play_round
 		switch_player
-		@board.display_board
-		puts "Where does #{@current_player.name} want to place their token?"
-		cell = gets.chomp.to_i
-		@board.update_board(@current_player, cell)
+		loop do
+			puts "Where does #{@current_player.name} want to go?"
+			cell = gets.chomp.to_i
+			if valid_cell?(cell)
+				@board.update_board(@current_player, cell)
+				@board.display_board
+				break
+			else
+				puts "Invalid input. Please enter a valid cell."
+				@board.display_board
+			end
+		end
+	end
+
+	def valid_cell?(cell)
+		cell.between?(1, 9) && !(Player.player_tokens.include?(@board.board[cell - 1]))
 	end
 
 	def game_over?
@@ -70,6 +81,12 @@ class Player
 	attr_reader :name, :token
 
 	@@player_number = 1
+	@@player_names = []
+	@@player_tokens = []
+
+	def self.player_tokens
+		@@player_tokens
+	end
 
 	def initialize
 		assign_name
@@ -79,14 +96,32 @@ class Player
 	end
 
 	def assign_name
-		puts "Enter Player #{@@player_number}'s name:"
-		@name = gets.chomp
-	end
+    loop do
+      puts "Enter Player #{@@player_number}'s name:"
+      @name = gets.chomp
+      break if valid_name?
+      puts "Player name must be unique."
+    end
+    @@player_names << @name
+  end
 
-	def assign_token
-		puts "Enter Player #{@@player_number}'s token:"
-		@token = gets.chomp
-	end
+  def valid_name?
+    !@name.empty? && !@@player_names.include?(@name)
+  end
+
+  def assign_token
+    loop do
+      puts "Enter Player #{@@player_number}'s token (it must be a non-numeric single character):"
+      @token = gets.chomp
+      break if valid_token?
+      puts "Token must be one character, non-numeric and unique."
+    end
+    @@player_tokens << @token
+  end
+
+  def valid_token?
+    @token.length == 1 && !@token.match?(/\d/) && !@@player_tokens.include?(@token)
+  end
 end
 
 game = Game.new
